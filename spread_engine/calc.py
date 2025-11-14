@@ -27,6 +27,7 @@ DEFAULT_FEES: Dict[str, FeeProfile] = {
 class SpreadOpportunity:
     buy_exchange: str
     sell_exchange: str
+    product: str
     best_buy_price: float
     best_sell_price: float
     gross_spread: float
@@ -88,6 +89,7 @@ class SpreadCalculator:
         return SpreadOpportunity(
             buy_exchange=buy_ticker.exchange,
             sell_exchange=sell_ticker.exchange,
+            product=buy_ticker.product,
             best_buy_price=buy_price,
             best_sell_price=sell_price,
             gross_spread=gross,

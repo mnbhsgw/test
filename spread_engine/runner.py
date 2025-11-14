@@ -11,6 +11,7 @@ from data_collector.normalizer import (
     normalize_order_book,
     normalize_ticker,
 )
+from data_collector.storage import FileStorageAdapter
 from spread_engine.calc import SpreadCalculator, SpreadOpportunity
 
 
@@ -36,6 +37,7 @@ def main() -> None:
         CoincheckClient(),
         BitbankClient(),
     ]
+    storage = FileStorageAdapter("storage_snapshots")
     snapshots: Dict[str, NormalizedTicker] = {}
     order_books: Dict[str, NormalizedOrderBook] = {}
     for client in clients:
@@ -62,7 +64,24 @@ def main() -> None:
     opportunities.sort(key=lambda opp: opp.net_spread, reverse=True)
     print(">>>> Spread opportunities <<<<")
     for opp in opportunities:
-        print(json.dumps(opp.__dict__, ensure_ascii=False, indent=2))
+        payload = {
+            "buy_exchange": opp.buy_exchange,
+            "sell_exchange": opp.sell_exchange,
+            "product": opp.product,
+            "best_buy_price": opp.best_buy_price,
+            "best_sell_price": opp.best_sell_price,
+            "gross_spread": opp.gross_spread,
+            "net_spread": opp.net_spread,
+            "available_volume": opp.available_volume,
+            "metadata": opp.metadata,
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        storage.persist_snapshot(
+            exchange=f"{opp.buy_exchange}->{opp.sell_exchange}",
+            product=opp.product,
+            kind="spread_opportunity",
+            payload=payload,
+        )
 
 
 if __name__ == "__main__":
