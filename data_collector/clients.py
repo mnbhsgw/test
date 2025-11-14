@@ -13,6 +13,7 @@ class ExchangeClient:
 
     exchange_name = "generic"
     user_agent = "btc-arb-monitor/0.1"
+    product = "BTC_JPY"
 
     def fetch_json(self, url: str, timeout: int = 10) -> JSONType:
         request = urllib.request.Request(url, headers={"User-Agent": self.user_agent})
@@ -69,6 +70,7 @@ class BitflyerClient(ExchangeClient):
 
 class CoincheckClient(ExchangeClient):
     exchange_name = "Coincheck"
+    product = "BTC_JPY"
     ticker_url = "https://coincheck.com/api/ticker"
     orderbook_url = "https://coincheck.com/api/order_books"
 
@@ -100,6 +102,7 @@ class CoincheckClient(ExchangeClient):
 
 class BitbankClient(ExchangeClient):
     exchange_name = "bitbank"
+    product = "BTC_JPY"
     base_url = "https://public.bitbank.cc/btc_jpy"
 
     def fetch_ticker(self) -> JSONType:

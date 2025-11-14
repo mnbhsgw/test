@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import asdict
 from typing import Iterable
 
 from .clients import BitbankClient, BitflyerClient, CoincheckClient, ExchangeClient
+from .normalizer import normalize_order_book, normalize_ticker
 
 
 def log_fetch(client: ExchangeClient) -> None:
@@ -24,6 +26,21 @@ def log_fetch(client: ExchangeClient) -> None:
     payload = {"ticker": ticker, "order_book": order_book}
     print(f"{client.exchange_name} snapshot:")
     print(json.dumps(payload, indent=2, ensure_ascii=False))
+
+    normalized_ticker = normalize_ticker(ticker, client.exchange_name, client.product)
+    normalized_order_book = normalize_order_book(order_book, client.exchange_name, client.product)
+
+    print(f"{client.exchange_name} normalized:")
+    print(
+        json.dumps(
+            {
+                "ticker": asdict(normalized_ticker) if normalized_ticker else None,
+                "order_book": asdict(normalized_order_book) if normalized_order_book else None,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
 
 def main() -> None:
