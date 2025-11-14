@@ -6,6 +6,7 @@ from .normalizer import (
     normalize_order_book,
     normalize_ticker,
 )
+from .storage import FileStorageAdapter, SnapshotRecord
 
 __all__ = [
     "BitflyerClient",
@@ -16,4 +17,6 @@ __all__ = [
     "NormalizedOrderBook",
     "normalize_ticker",
     "normalize_order_book",
+    "FileStorageAdapter",
+    "SnapshotRecord",
 ]

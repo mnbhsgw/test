@@ -1,0 +1,3 @@
+storage_snapshots/
+*.pyc
+__pycache__/

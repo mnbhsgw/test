@@ -7,9 +7,10 @@ from typing import Iterable
 
 from .clients import BitbankClient, BitflyerClient, CoincheckClient, ExchangeClient
 from .normalizer import normalize_order_book, normalize_ticker
+from .storage import FileStorageAdapter
 
 
-def log_fetch(client: ExchangeClient) -> None:
+def log_fetch(client: ExchangeClient, storage: FileStorageAdapter) -> None:
     """Fetch ticker and order book data from a client and print JSON."""
 
     def fetch_or_none(func_name: str):
@@ -31,16 +32,25 @@ def log_fetch(client: ExchangeClient) -> None:
     normalized_order_book = normalize_order_book(order_book, client.exchange_name, client.product)
 
     print(f"{client.exchange_name} normalized:")
-    print(
-        json.dumps(
-            {
-                "ticker": asdict(normalized_ticker) if normalized_ticker else None,
-                "order_book": asdict(normalized_order_book) if normalized_order_book else None,
-            },
-            indent=2,
-            ensure_ascii=False,
+    normalized_payload = {
+        "ticker": asdict(normalized_ticker) if normalized_ticker else None,
+        "order_book": asdict(normalized_order_book) if normalized_order_book else None,
+    }
+    print(json.dumps(normalized_payload, indent=2, ensure_ascii=False))
+    if normalized_ticker:
+        storage.persist_snapshot(
+            exchange=client.exchange_name,
+            product=client.product,
+            kind="ticker",
+            payload=asdict(normalized_ticker),
         )
-    )
+    if normalized_order_book:
+        storage.persist_snapshot(
+            exchange=client.exchange_name,
+            product=client.product,
+            kind="order_book",
+            payload=asdict(normalized_order_book),
+        )
 
 
 def main() -> None:
@@ -49,9 +59,10 @@ def main() -> None:
         CoincheckClient(),
         BitbankClient(),
     ]
+    storage = FileStorageAdapter("storage_snapshots")
 
     for client in clients:
-        log_fetch(client)
+        log_fetch(client, storage)
 
 
 if __name__ == "__main__":
