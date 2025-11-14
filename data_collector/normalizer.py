@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
+from observability.metrics import record_normalization
+
 
 def _safe_float(value: Any) -> Optional[float]:
     if value is None:
@@ -88,12 +90,13 @@ def normalize_ticker(
     raw: Optional[Dict[str, Any]], exchange: str, product: str
 ) -> Optional[NormalizedTicker]:
     if raw is None:
+        record_normalization("ticker", "skipped")
         return None
     allowed = {"exchange", "timestamp", "bid", "ask", "bid_size", "ask_size", "volume"}
     metadata = {
         key: value for key, value in raw.items() if key not in allowed
     }
-    return NormalizedTicker(
+    normalized = NormalizedTicker(
         exchange=exchange,
         product=product,
         timestamp=_timestamp_to_iso(raw.get("timestamp")),
@@ -104,16 +107,19 @@ def normalize_ticker(
         volume=_safe_float(raw.get("volume")),
         metadata=metadata,
     )
+    record_normalization("ticker", "success")
+    return normalized
 
 
 def normalize_order_book(
     raw: Optional[Dict[str, Any]], exchange: str, product: str, limit: int = 5
 ) -> Optional[NormalizedOrderBook]:
     if raw is None:
+        record_normalization("order_book", "skipped")
         return None
     metadata = {k: v for k, v in raw.items() if k not in {"exchange", "timestamp", "bids", "asks"}}
 
-    return NormalizedOrderBook(
+    normalized = NormalizedOrderBook(
         exchange=exchange,
         product=product,
         timestamp=_timestamp_to_iso(raw.get("timestamp")),
@@ -121,3 +127,5 @@ def normalize_order_book(
         asks=_normalize_levels(raw.get("asks", []), limit),
         metadata=metadata,
     )
+    record_normalization("order_book", "success")
+    return normalized

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Protocol
 
+from observability.metrics import record_alert
+
 
 @dataclass
 class AlertRule:
@@ -90,5 +92,6 @@ class AlertRouter:
             return False
         for channel in self.channels:
             channel.send(alert)
+            record_alert(channel.__class__.__name__)
         self.last_sent[key] = datetime.utcnow()
         return True

@@ -4,6 +4,8 @@ import urllib.request
 from datetime import datetime
 from typing import Any, Dict, List, Sequence, Tuple
 
+from observability.metrics import track_api_request
+
 
 JSONType = Dict[str, Any]
 
@@ -42,8 +44,9 @@ class BitflyerClient(ExchangeClient):
     product = "BTC_JPY"
 
     def fetch_ticker(self) -> JSONType:
-        url = f"https://api.bitflyer.com/v1/ticker?product_code={self.product}"
-        data = self.fetch_json(url)
+        with track_api_request(self.exchange_name, "ticker"):
+            url = f"https://api.bitflyer.com/v1/ticker?product_code={self.product}"
+            data = self.fetch_json(url)
         return {
             "exchange": self.exchange_name,
             "timestamp": data.get("timestamp"),
@@ -54,8 +57,9 @@ class BitflyerClient(ExchangeClient):
         }
 
     def fetch_order_book(self, limit: int = 5) -> JSONType:
-        url = f"https://api.bitflyer.com/v1/board?product_code={self.product}"
-        data = self.fetch_json(url)
+        with track_api_request(self.exchange_name, "order_book"):
+            url = f"https://api.bitflyer.com/v1/board?product_code={self.product}"
+            data = self.fetch_json(url)
         return {
             "exchange": self.exchange_name,
             "timestamp": data.get("timestamp"),
@@ -75,7 +79,8 @@ class CoincheckClient(ExchangeClient):
     orderbook_url = "https://coincheck.com/api/order_books"
 
     def fetch_ticker(self) -> JSONType:
-        data = self.fetch_json(self.ticker_url)
+        with track_api_request(self.exchange_name, "ticker"):
+            data = self.fetch_json(self.ticker_url)
         timestamp = data.get("timestamp")
         iso_ts = self._format_iso(float(timestamp)) if timestamp else None
         return {
@@ -87,7 +92,8 @@ class CoincheckClient(ExchangeClient):
         }
 
     def fetch_order_book(self, limit: int = 5) -> JSONType:
-        data = self.fetch_json(self.orderbook_url)
+        with track_api_request(self.exchange_name, "order_book"):
+            data = self.fetch_json(self.orderbook_url)
         timestamp = data.get("timestamp")
         iso_ts = self._format_iso(float(timestamp)) if timestamp else None
         bids = [(float(price), float(amount)) for price, amount in data.get("bids", [])]
@@ -106,7 +112,8 @@ class BitbankClient(ExchangeClient):
     base_url = "https://public.bitbank.cc/btc_jpy"
 
     def fetch_ticker(self) -> JSONType:
-        data = self.fetch_json(f"{self.base_url}/ticker")
+        with track_api_request(self.exchange_name, "ticker"):
+            data = self.fetch_json(f"{self.base_url}/ticker")
         payload = data.get("data", {})
         timestamp = payload.get("timestamp")
         iso_ts = (
@@ -120,7 +127,8 @@ class BitbankClient(ExchangeClient):
         }
 
     def fetch_order_book(self, limit: int = 5) -> JSONType:
-        data = self.fetch_json(f"{self.base_url}/depth")
+        with track_api_request(self.exchange_name, "order_book"):
+            data = self.fetch_json(f"{self.base_url}/depth")
         payload = data.get("data", {})
         timestamp = payload.get("timestamp")
         iso_ts = (

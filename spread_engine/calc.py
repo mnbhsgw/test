@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, Optional
 
 from data_collector.normalizer import NormalizedLevel, NormalizedOrderBook, NormalizedTicker
+from observability.metrics import record_spread_attempt, record_spread_opportunity
 
 
 @dataclass
@@ -55,17 +56,20 @@ class SpreadCalculator:
         sell_order_book: NormalizedOrderBook,
     ) -> Optional[SpreadOpportunity]:
         if buy_ticker.product != sell_ticker.product:
+            record_spread_attempt("skip_product")
             return None
 
         buy_level = self._top_level(buy_order_book, "ask")
         sell_level = self._top_level(sell_order_book, "bid")
         if not buy_level or not sell_level:
+            record_spread_attempt("skip_levels")
             return None
 
         buy_price = buy_level.price
         sell_price = sell_level.price
         volume = min(buy_level.size, sell_level.size)
         if volume <= 0 or sell_price <= buy_price:
+            record_spread_attempt("skip_volume_price")
             return None
 
         buy_fee = self._fee_profile(buy_ticker.exchange)
@@ -77,6 +81,7 @@ class SpreadCalculator:
         net = sell_gain - (buy_price + buy_cost) - buy_fee.withdrawal_fee - sell_fee.withdrawal_fee
 
         if net <= 0:
+            record_spread_attempt("skip_no_profit")
             return None
 
         metadata = {
@@ -85,6 +90,9 @@ class SpreadCalculator:
             "buy_withdrawal_fee": buy_fee.withdrawal_fee,
             "sell_withdrawal_fee": sell_fee.withdrawal_fee,
         }
+
+        record_spread_attempt("positive")
+        record_spread_opportunity(buy_ticker.exchange, sell_ticker.exchange)
 
         return SpreadOpportunity(
             buy_exchange=buy_ticker.exchange,
